@@ -2,6 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
+import storageUtils from './utils/storageUtils'
+import memoryUtils from './utils/memoryUtils'
+
+//read user saved in local
+const user = storageUtils.getUser()
+memoryUtils.user = user
 
 ReactDOM.render(<App />, document.getElementById('root'));
 

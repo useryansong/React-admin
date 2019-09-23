@@ -1,9 +1,12 @@
 import React, { Component } from 'react'
-import { Form, Icon, Input, Button } from 'antd';
+import { Form, Icon, Input, Button, message } from 'antd';
+import {Redirect} from 'react-router-dom'
 
 import './login.less'
-import avatar from './images/logo192.png'
-import {reqLogin} from '../../api/index'
+import avatar from '../../assets/images/logo192.png'
+import { reqLogin } from '../../api/index'
+import memoryUtils from '../../utils/memoryUtils'
+import storageUtils from '../../utils/storageUtils'
 
 /**
  * login router component
@@ -11,18 +14,33 @@ import {reqLogin} from '../../api/index'
 class Login extends Component {
 
     handleSubmit = (event) => {
+        //stop default event
         event.preventDefault()
-        this.props.form.validateFields((err, values) => {
+        this.props.form.validateFields(async (err, values) => {
+            //validation success
             if (!err) {
-               //console.log('Received values of form: ', values);
-            const {username,password} = values
-            reqLogin(username,password).then(response => {
-                console.log('success',response.data)
-            }).catch(error => {
-                console.log('failed', error)
-            })
+                //console.log('Received values of form: ', values);
+                const { username, password } = values
+                const result = await reqLogin(username, password)// {status:0 or 1, data: }
+                // console.log('request success', result)
+                if (result.status === 0) {//login success
+                    message.success('login successully')
+
+                    //SAVE user
+                    const user = result.data
+                    memoryUtils.user = user // save in RAM
+                    storageUtils.saveUser(user) //save data in local
+
+                    //nav to admin page
+                    this.props.history.replace('/')
+                } else {//login failed
+                    message.error(result.msg)
+                }
+            } else {
+                console.log('request failed')
+
             }
-          });
+        });
         //get form
         // const form = this.props.form
         //get form data
@@ -30,6 +48,13 @@ class Login extends Component {
     }
 
     render() {
+        //if has aready login, nav to admin
+        const user = memoryUtils.user
+        if(!user) {
+            return (
+                <Redirect to='/'/>
+            )
+        }
 
         //receive the form function
         const form = this.props.form
@@ -47,7 +72,7 @@ class Login extends Component {
                             <Form.Item>
                                 {getFieldDecorator('username', {
                                     rules: [
-                                        { required: true,whitespace:true, message: 'Please input your username!' },
+                                        { required: true, whitespace: true, message: 'Please input your username!' },
                                         { min: 4, message: 'username too short' },
                                         { max: 12, message: 'username too long' },
                                         { pattern: /^[a-zA-Z0-9_]+$/, message: 'username must be letter, number or _' },
@@ -110,4 +135,13 @@ export default WrapLogin
 /**
  * 1.js-form-validation
  * 2.get form data
+ */
+
+/**
+ * async and await
+ * 1. make easier for using promise object: don't need to use then()
+ * 2. where to use await?
+ *  at the left side of promise: don't want promise, just want the value after promise funciton
+ * 3. where to use async/
+ * at the left side of the function which include await
  */
